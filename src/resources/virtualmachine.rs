@@ -1,7 +1,7 @@
-use config_client::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1::config_controller_client::ConfigControllerClient;
-use config_client::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
+use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1::config_controller_client::ConfigControllerClient;
+use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 use crate::resources::resource::{ResourceInterface};
-use config_client::protos::ssd_git::juniper::net::contrail::cn2::contrail::pkg::apis::core::v1alpha1;
+use agent_ng::protos::ssd_git::juniper::net::contrail::cn2::contrail::pkg::apis::core::v1alpha1;
 use async_trait::async_trait;
 
 #[derive(Copy,Clone)]

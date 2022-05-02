@@ -1,5 +1,5 @@
-use config_client::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1::config_controller_client::ConfigControllerClient;
-use config_client::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
+use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1::config_controller_client::ConfigControllerClient;
+use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 use std::collections::HashMap;
 use std::vec::Vec;
 use std::error::Error;

@@ -7,7 +7,7 @@ fn main() {
     .client_mod_attribute("attrs", "#[cfg(feature = \"client\")]")
     //.client_attribute("ConfigController", "#[derive(PartialEq)]")
     .compile(
-        &["../../../../../src/github.com/michaelhenkel/config-controller/pkg/apis/v1/controller.proto"],
-        &["../../../../../src"],
+        &["../../../../src/github.com/michaelhenkel/config-controller/pkg/apis/v1/controller.proto"],
+        &["../../../../src"],
     ).unwrap();
 }

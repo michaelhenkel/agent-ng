@@ -1,5 +1,5 @@
 [package]
-name = "config_client"
+name = "agent_ng"
 version = "0.1.0"
 edition = "2021"
 
