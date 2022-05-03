@@ -1,4 +1,3 @@
-use futures;
 use crate::config_controller::config_controller::ConfigController;
 use async_trait::async_trait;
 use serde::Deserialize;
