@@ -1,9 +1,12 @@
 use async_trait::async_trait;
+use std::error::Error;
 use serde::Deserialize;
 use crate::config_controller::cn2::cn2::CN2ConfigController;
 use crate::config_controller::cn2::cn2::Config as CN2Config;
 use crate::config_controller::cli::cli::CLIConfigController;
 use crate::config_controller::cli::cli::Config as CLIConfig;
+use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
+
 
 
 #[derive(Deserialize, Debug)]
@@ -14,18 +17,19 @@ pub struct Config {
 
 #[async_trait]
 pub trait ConfigController: Send + Sync {
-    async fn run(self) -> Result<(), Box<dyn std::error::Error + Send>>;
+    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn std::error::Error + Send>>;
     fn name(&self) -> String;
 }
 
-pub async fn start(name: String, config: Config) -> Vec<Result<Result<(), Box<dyn std::error::Error + std::marker::Send>>, tokio::task::JoinError>> {
+pub async fn start(name: String, config: Config, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Vec<Result<Result<(), Box<dyn std::error::Error + std::marker::Send>>, tokio::task::JoinError>> {
+//pub async fn start(name: String, config: Config) -> Vec<tokio::task::JoinHandle<Result<(), Box<dyn Error + Send>>>> {
     println!("starting config_controller");
     let mut join_handles = Vec::new();
 
     let cn2_config = config.cn2.unwrap();
     if cn2_config.enabled.unwrap(){
         let cn2_config_controller = CN2ConfigController::new(name.clone(), cn2_config);
-        let res = run(cn2_config_controller);
+        let res = run(cn2_config_controller, cache_channel.clone());
         let join_handle = tokio::task::spawn(res);
         join_handles.push(join_handle);
     }
@@ -33,17 +37,18 @@ pub async fn start(name: String, config: Config) -> Vec<Result<Result<(), Box<dy
     let cli_config = config.cli.unwrap();
     if cli_config.enabled.unwrap(){
         let cli_config_controller = CLIConfigController::new(name.clone(), cli_config);
-        let cli_res = run(cli_config_controller);
+        let cli_res = run(cli_config_controller, cache_channel.clone());
         let cli_join_handle = tokio::task::spawn(cli_res);
         join_handles.push(cli_join_handle);
     }
     
     futures::future::join_all(join_handles).await
+    //join_handles
 }
 
-pub async fn run<T: 'static + ConfigController>(controller: T) -> Result<(), Box<dyn std::error::Error + Send>> {
+pub async fn run<T: 'static + ConfigController>(controller: T, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn std::error::Error + Send>> {
     println!("running config_controller {}", controller.name());
-    let res = controller.run();
+    let res = controller.run(cache_channel);
     res.await
 }
 

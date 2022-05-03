@@ -40,7 +40,7 @@ impl ConfigController for CN2ConfigController{
     fn name(&self) -> String{
         "CN2ConfigController".to_string()
     }
-    async fn run(self) -> Result<(), Box<dyn std::error::Error + Send>> {
+    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cn2 plugin");
         let server = string_to_static_str(self.config.server.unwrap());
         let channel = Endpoint::from_static(server)
@@ -55,7 +55,7 @@ impl ConfigController for CN2ConfigController{
             sender_map.insert(r.to_string(), sender);
             let rc = ResourceController::new();
             let res = get_res(r.clone());
-            let run_res = rc.run(channel.clone(), receiver, sender_clone, res, r.to_string()).map_err(|_| "Unable to get book".to_string());
+            let run_res = rc.run(channel.clone(), receiver, sender_clone, res, r.to_string(), cache_channel.clone()).map_err(|_| "Unable to get book".to_string());
             let join_handle = tokio::task::spawn(run_res);
             join_handles.push(join_handle);
         }

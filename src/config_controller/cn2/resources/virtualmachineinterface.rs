@@ -15,7 +15,7 @@ impl VirtualMachineInterfaceController {
 
 #[async_trait]
 impl ResourceInterface for VirtualMachineInterfaceController{
-    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::Resource>, resource: v1::Resource){
+    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::Resource>, resource: v1::Resource, cache_channel: crossbeam_channel::Sender<v1::Resource>){
         let mut client = client.clone();
         tokio::spawn(async move {
             let res_result: Result<tonic::Response<v1alpha1::VirtualMachineInterface>, tonic::Status> = client.get_virtual_machine_interface(resource.clone()).await;

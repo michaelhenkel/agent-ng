@@ -1,6 +1,7 @@
 use crate::config_controller::config_controller::ConfigController;
 use async_trait::async_trait;
 use serde::Deserialize;
+use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 
 
 #[derive(Deserialize, Debug)]
@@ -27,7 +28,7 @@ impl ConfigController for CLIConfigController{
     fn name(&self) -> String{
         "CLIConfigController".to_string()
     }
-    async fn run(self) -> Result<(), Box<dyn std::error::Error + Send>> {
+    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cli plugin");
         Ok(())
     }

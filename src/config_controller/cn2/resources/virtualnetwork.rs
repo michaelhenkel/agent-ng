@@ -15,7 +15,7 @@ impl VirtualNetworkController {
 
 #[async_trait]
 impl ResourceInterface for VirtualNetworkController{
-    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::Resource>, resource: v1::Resource){
+    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::Resource>, resource: v1::Resource, cache_channel: crossbeam_channel::Sender<v1::Resource>){
         let mut client = client.clone();
         tokio::spawn(async move {
             let resource_key = format!("{}/{}/{}", resource.clone().kind, resource.clone().namespace, resource.clone().name);
@@ -34,7 +34,8 @@ impl ResourceInterface for VirtualNetworkController{
                         kind: resource.kind,
                         action: i32::from(v1::resource::Action::Del),
                     };
-                    sender.send(resource).unwrap();
+                    cache_channel.send(resource.clone()).unwrap();
+                    sender.send(resource.clone()).unwrap();
                 },
                 Err(err) => {
                     if err.code() == tonic::Code::NotFound {
