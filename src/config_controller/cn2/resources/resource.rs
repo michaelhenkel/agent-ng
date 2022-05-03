@@ -3,7 +3,7 @@ use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::
 use std::collections::HashMap;
 use std::vec::Vec;
 use std::error::Error;
-use crate::resources;
+use crate::config_controller::cn2::resources;
 use async_trait::async_trait;
 
 pub struct ResourceController {

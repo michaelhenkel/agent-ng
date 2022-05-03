@@ -1,6 +1,6 @@
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1::config_controller_client::ConfigControllerClient;
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
-use crate::resources::resource::{ResourceInterface};
+use crate::config_controller::cn2::resources::resource::{ResourceInterface};
 use agent_ng::protos::ssd_git::juniper::net::contrail::cn2::contrail::pkg::apis::core::v1alpha1;
 use async_trait::async_trait;
 

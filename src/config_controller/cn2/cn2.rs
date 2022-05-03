@@ -7,7 +7,7 @@ use std::vec::Vec;
 use serde::Deserialize;
 use tonic::transport::Endpoint;
 use crossbeam_channel::unbounded;
-use crate::resources::resource::{get_res, res_list, ResourceController};
+use crate::config_controller::cn2::resources::resource::{get_res, res_list, ResourceController};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use futures;

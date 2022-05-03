@@ -1,4 +1,3 @@
-mod resources;
 mod config_controller;
 mod config;
 
