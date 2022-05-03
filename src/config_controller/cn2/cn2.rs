@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::env;
 use std::vec::Vec;
+use serde::Deserialize;
 use super::super::super::resources;
 use tonic::transport::Endpoint;
 use crossbeam_channel::unbounded;
@@ -16,12 +17,21 @@ use futures::future::TryFutureExt;
 use crate::config_controller::config_controller::ConfigController;
 use async_trait::async_trait;
 
+#[derive(Deserialize, Debug)]
+pub struct Config {
+    pub enabled: Option<bool>,
+    server: Option<String>,
+}
 
-pub struct CN2ConfigController {}
+pub struct CN2ConfigController {
+    config: Config,
+}
 
 impl CN2ConfigController{
-    pub fn new() -> Self {
-        Self{}
+    pub fn new(config: Config) -> Self {
+        Self{
+            config: config,
+        }
     }    
 }
 
@@ -30,9 +40,14 @@ impl ConfigController for CN2ConfigController{
     fn name(&self) -> String{
         "CN2ConfigController".to_string()
     }
-    async fn run(&self) -> Result<(), Box<dyn std::error::Error + Send>> {
+    async fn run(self) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cn2 plugin");
-        let channel = Endpoint::from_static("http://127.0.0.1:20443")
+        /*
+        let server = &self.config.server.clone();
+        let server = server.as_ref().unwrap();
+        let s = server.as_str();
+        */
+        let channel = Endpoint::from_static("")
             .connect()
             .await.unwrap();
         let sender_map: Arc<Mutex<HashMap<String,crossbeam_channel::Sender<v1::Resource>>>> = Arc::new(Mutex::new(HashMap::new()));

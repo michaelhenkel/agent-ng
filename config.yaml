@@ -1,0 +1,8 @@
+name: 5b3s31
+config_controller:
+  cn2:
+    enabled: true
+    server: http://127.0.0.1:20443
+  cli:
+    enabled: true
+    socket_path: /var/run/agent.sock
