@@ -25,12 +25,14 @@ pub struct Config {
 
 pub struct CN2ConfigController {
     config: Config,
+    name: String,
 }
 
 impl CN2ConfigController{
-    pub fn new(config: Config) -> Self {
+    pub fn new(name: String, config: Config) -> Self {
         Self{
             config: config,
+            name: name,
         }
     }    
 }
@@ -42,12 +44,8 @@ impl ConfigController for CN2ConfigController{
     }
     async fn run(self) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cn2 plugin");
-        /*
-        let server = &self.config.server.clone();
-        let server = server.as_ref().unwrap();
-        let s = server.as_str();
-        */
-        let channel = Endpoint::from_static("")
+        let server = string_to_static_str(self.config.server.unwrap());
+        let channel = Endpoint::from_static(server)
             .connect()
             .await.unwrap();
         let sender_map: Arc<Mutex<HashMap<String,crossbeam_channel::Sender<v1::Resource>>>> = Arc::new(Mutex::new(HashMap::new()));
@@ -63,8 +61,7 @@ impl ConfigController for CN2ConfigController{
             let join_handle = tokio::task::spawn(run_res);
             join_handles.push(join_handle);
         }
-        
-        let subscribe_thread = subscribe(channel.clone(), sender_map).map_err(|_| "Unable to get book".to_string());
+        let subscribe_thread = subscribe(channel.clone(), sender_map, self.name).map_err(|_| "Unable to get book".to_string());
         let join_handle = tokio::task::spawn(subscribe_thread);
     
         join_handles.push(join_handle);
@@ -74,43 +71,15 @@ impl ConfigController for CN2ConfigController{
     
 }
 
-/*
-#[tokio::main]
-pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let channel = Endpoint::from_static("http://127.0.0.1:20443")
-        .connect()
-        .await?;
-
-    let sender_map: Arc<Mutex<HashMap<String,crossbeam_channel::Sender<v1::Resource>>>> = Arc::new(Mutex::new(HashMap::new()));
-
-    let mut join_handles = Vec::new();
-    for r in res_list(){
-        let (sender, receiver): (crossbeam_channel::Sender<v1::Resource>, crossbeam_channel::Receiver<v1::Resource>) = unbounded();
-        let mut sender_map = sender_map.lock().await;
-        let sender_clone = sender.clone();
-        sender_map.insert(r.to_string(), sender);
-        let rc = ResourceController::new();
-        let res = get_res(r.clone());
-        let run_res = rc.run(channel.clone(), receiver, sender_clone, res, r.to_string()).map_err(|_| "Unable to get book".to_string());
-        let join_handle = tokio::task::spawn(run_res);
-        join_handles.push(join_handle);
-    }
-    
-    let subscribe_thread = subscribe(channel.clone(), sender_map).map_err(|_| "Unable to get book".to_string());
-    let join_handle = tokio::task::spawn(subscribe_thread);
-
-    join_handles.push(join_handle);
-    futures::future::join_all(join_handles).await;
-
-    Ok(())
+fn string_to_static_str(s: String) -> &'static str {
+    Box::leak(s.into_boxed_str())
 }
-*/
 
-async fn subscribe(channel: tonic::transport::Channel, sender_map: Arc<Mutex<HashMap<String,crossbeam_channel::Sender<v1::Resource>>>>) -> Result<(), Box<dyn Error>> {
+async fn subscribe(channel: tonic::transport::Channel, sender_map: Arc<Mutex<HashMap<String,crossbeam_channel::Sender<v1::Resource>>>>, name: String) -> Result<(), Box<dyn Error>> {
     println!("started subscriber_controller");
     let mut client = ConfigControllerClient::new(channel.clone());
     let request = tonic::Request::new(SubscriptionRequest {
-        name: get_node(),
+        name: name,
     });
 
     let mut stream = client

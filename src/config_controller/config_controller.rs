@@ -24,7 +24,7 @@ pub async fn start(name: String, config: Config) -> Vec<Result<Result<(), Box<dy
 
     let cn2_config = config.cn2.unwrap();
     if cn2_config.enabled.unwrap(){
-        let cn2_config_controller = CN2ConfigController::new(cn2_config);
+        let cn2_config_controller = CN2ConfigController::new(name, cn2_config);
         let res = run(cn2_config_controller);
         let join_handle = tokio::task::spawn(res);
         join_handles.push(join_handle);
