@@ -3,10 +3,8 @@ use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 use std::collections::HashMap;
 use std::error::Error;
-use std::env;
 use std::vec::Vec;
 use serde::Deserialize;
-use super::super::super::resources;
 use tonic::transport::Endpoint;
 use crossbeam_channel::unbounded;
 use crate::resources::resource::{get_res, res_list, ResourceController};
@@ -31,8 +29,8 @@ pub struct CN2ConfigController {
 impl CN2ConfigController{
     pub fn new(name: String, config: Config) -> Self {
         Self{
-            config: config,
-            name: name,
+            config,
+            name,
         }
     }    
 }
@@ -68,7 +66,6 @@ impl ConfigController for CN2ConfigController{
         futures::future::join_all(join_handles).await;
         Ok(())
     }
-    
 }
 
 fn string_to_static_str(s: String) -> &'static str {
@@ -88,7 +85,6 @@ async fn subscribe(channel: tonic::transport::Channel, sender_map: Arc<Mutex<Has
         .into_inner();
 
     while let Some(resource) = stream.message().await? {
-        //println!("got resource");
         let sender_map = sender_map.lock().await;
         if let Some(sender) = sender_map.get(resource.kind.as_str()) {
             if let Err(err) = sender.send(resource){
@@ -97,13 +93,4 @@ async fn subscribe(channel: tonic::transport::Channel, sender_map: Arc<Mutex<Has
         }
     }
     Ok(())
-}
-
-fn get_node() -> String {
-    if env::args().len() > 0 {
-        let args: Vec<String> = env::args().collect();
-        args[1].to_string()
-    } else {
-        "5b3s30".to_string()
-    }
 }
