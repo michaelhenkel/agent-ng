@@ -8,11 +8,17 @@ pub struct Config {
     pub enabled: Option<bool>,
     socket_path: Option<String>,
 }
-pub struct CLIConfigController {}
+pub struct CLIConfigController {
+    config: Config,
+    name: String,
+}
 
 impl CLIConfigController{
-    pub fn new(config: Config) -> Self {
-        Self{}
+    pub fn new(name: String, config: Config) -> Self {
+        Self{
+            config,
+            name,
+        }
     }    
 }
 
