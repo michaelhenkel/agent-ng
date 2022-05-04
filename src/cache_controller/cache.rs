@@ -13,9 +13,9 @@ pub struct cache {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub struct Key {
-    name: String,
-    namespace: String,
-    kind: String,
+    pub name: String,
+    pub namespace: String,
+    pub kind: String,
 }
 
 impl Key {
