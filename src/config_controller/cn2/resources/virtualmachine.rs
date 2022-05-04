@@ -31,6 +31,7 @@ impl ResourceInterface for VirtualMachineController{
                         namespace: resource.namespace,
                         kind: resource.kind,
                         action: i32::from(v1::resource::Action::Del),
+                        references: resource.references,
                     };
                     sender.send(resource).unwrap();
                 },
@@ -41,6 +42,7 @@ impl ResourceInterface for VirtualMachineController{
                             namespace: resource.namespace,
                             kind: resource.kind,
                             action: i32::from(v1::resource::Action::Del),
+                            references: resource.references,
                         };
                         sender.send(resource).unwrap();
                     } else {
@@ -50,6 +52,7 @@ impl ResourceInterface for VirtualMachineController{
                             namespace: resource.namespace,
                             kind: resource.kind,
                             action: i32::from(v1::resource::Action::Retry),
+                            references: resource.references,
                         };
                         sender.send(resource).unwrap();
                     }

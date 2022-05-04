@@ -28,14 +28,27 @@ impl ResourceInterface for VirtualNetworkController{
                     println!("{}/{}", res.metadata.as_ref().unwrap().namespace(), res.metadata.as_ref().unwrap().name());
                     println!("labels {:?}", res.metadata.as_ref().unwrap().labels);
                     println!("##########Done: VirtualNetwork##########");
-                    let resource = v1::Resource{
+                    let mut ref_list: Vec<v1alpha1::ResourceReference> = Vec::new();
+                    let v4_subnet_ref = res.spec.as_ref().unwrap().v4_subnet_reference.to_owned().unwrap();
+                    ref_list.push(v4_subnet_ref);
+                    
+                    match res.spec.as_ref().unwrap().v6_subnet_reference.to_owned(){
+                        Some(v6_subnet_ref) => {
+                            ref_list.push(v6_subnet_ref);
+                        },
+                        _ => {}, 
+                    }
+                    let mut resource = v1::Resource{
                         name: resource.name,
                         namespace: resource.namespace,
                         kind: resource.kind,
                         action: i32::from(v1::resource::Action::Del),
+                        references: ref_list,
                     };
-                    cache_channel.send(resource.clone()).unwrap();
+                    //cache_channel.send(resource.clone()).unwrap();
                     sender.send(resource.clone()).unwrap();
+                    resource.action = i32::from(v1::resource::Action::Add);
+                    cache_channel.send(resource.clone()).unwrap();
                 },
                 Err(err) => {
                     if err.code() == tonic::Code::NotFound {
@@ -44,8 +57,10 @@ impl ResourceInterface for VirtualNetworkController{
                             namespace: resource.namespace,
                             kind: resource.kind,
                             action: i32::from(v1::resource::Action::Del),
+                            references: resource.references,
                         };
-                        sender.send(resource).unwrap();
+                        sender.send(resource.clone()).unwrap();
+                        cache_channel.send(resource.clone()).unwrap();
                     } else {
                         println!("err {:?}", err);
                         let resource = v1::Resource{
@@ -53,6 +68,7 @@ impl ResourceInterface for VirtualNetworkController{
                             namespace: resource.namespace,
                             kind: resource.kind,
                             action: i32::from(v1::resource::Action::Retry),
+                            references: resource.references,
                         };
                         sender.send(resource).unwrap();
                     }

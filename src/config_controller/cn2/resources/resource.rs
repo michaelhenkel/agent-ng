@@ -54,6 +54,7 @@ impl ResourceController {
                             namespace: resource.namespace,
                             kind: resource.kind,
                             action: i32::from(v1::resource::Action::Add),
+                            references: resource.references,
                         };
                         sender.send(resource).unwrap();
                     }

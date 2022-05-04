@@ -5,14 +5,16 @@ pub struct SubscriptionRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Resource {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub kind: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub name: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub namespace: ::prost::alloc::string::String,
-    #[prost(enumeration = "resource::Action", tag = "4")]
+    #[prost(enumeration="resource::Action", tag="4")]
     pub action: i32,
+    #[prost(message, repeated, tag="5")]
+    pub references: ::prost::alloc::vec::Vec<super::super::super::super::super::super::super::ssd_git::juniper::net::contrail::cn2::contrail::pkg::apis::core::v1alpha1::ResourceReference>,
 }
 /// Nested message and enum types in `Resource`.
 pub mod resource {
@@ -23,6 +25,15 @@ pub mod resource {
         Del = 1,
         Retry = 2,
     }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Reference {
+    #[prost(string, tag = "1")]
+    pub kind: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub namespace: ::prost::alloc::string::String,
 }
 #[doc = r" Generated client implementations."]
 pub mod config_controller_client {

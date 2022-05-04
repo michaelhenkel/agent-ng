@@ -26,13 +26,23 @@ impl ResourceInterface for VirtualMachineInterfaceController{
                     println!("{}/{}", res.metadata.as_ref().unwrap().namespace(), res.metadata.as_ref().unwrap().name());
                     println!("labels {:?}", res.metadata.as_ref().unwrap().labels);
                     println!("##########Done: VirtualMachineInterface##########");
-                    let resource = v1::Resource{
+                    let mut ref_list: Vec<v1alpha1::ResourceReference> = Vec::new();
+                    let virtual_network_ref = res.spec.as_ref().unwrap().virtual_network_reference.to_owned().unwrap();
+                    ref_list.push(virtual_network_ref);
+                    let mut virtual_machine_refs = res.spec.as_ref().unwrap().virtual_machine_references.to_owned();
+                    ref_list.append(&mut virtual_machine_refs);
+                    let mut virtual_machine_interface_refs = res.spec.as_ref().unwrap().virtual_machine_interface_references.to_owned();
+                    ref_list.append(&mut virtual_machine_interface_refs);
+                    let mut resource = v1::Resource{
                         name: resource.name,
                         namespace: resource.namespace,
                         kind: resource.kind,
                         action: i32::from(v1::resource::Action::Del),
+                        references: ref_list,
                     };
-                    sender.send(resource).unwrap();
+                    sender.send(resource.clone()).unwrap();
+                    resource.action = i32::from(v1::resource::Action::Add);
+                    cache_channel.send(resource.clone()).unwrap();
                 },
                 Err(err) => {
                     if err.code() == tonic::Code::NotFound {
@@ -41,6 +51,7 @@ impl ResourceInterface for VirtualMachineInterfaceController{
                             namespace: resource.namespace,
                             kind: resource.kind,
                             action: i32::from(v1::resource::Action::Del),
+                            references: resource.references,
                         };
                         sender.send(resource).unwrap();
                     } else {
@@ -50,6 +61,7 @@ impl ResourceInterface for VirtualMachineInterfaceController{
                             namespace: resource.namespace,
                             kind: resource.kind,
                             action: i32::from(v1::resource::Action::Retry),
+                            references: resource.references,
                         };
                         sender.send(resource).unwrap();
                     }
