@@ -5,6 +5,7 @@ use super::graph::Graph;
 use std::hash::{Hash, Hasher};
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 
+#[derive(Clone)]
 pub struct Cache {
     receiver: crossbeam_channel::Receiver<v1::Resource>,
     sender: crossbeam_channel::Sender<v1::Resource>,

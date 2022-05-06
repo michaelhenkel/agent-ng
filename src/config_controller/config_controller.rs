@@ -17,19 +17,19 @@ pub struct Config {
 
 #[async_trait]
 pub trait ConfigControllerInterface: Send + Sync{
-    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn std::error::Error + Send>>;
+    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>, cc: Cache) -> Result<(), Box<dyn std::error::Error + Send>>;
     fn name(&self) -> String;
 }
 
-pub struct ConfigController<'a> {
+pub struct ConfigController {
     name: String,
     config: Config,
     cache_channel: crossbeam_channel::Sender<v1::Resource>,
-    cache_client: &'a Cache,
+    cache_client: Cache,
 }
 
-impl<'a> ConfigController<'a> {
-    pub fn new(name: String, config: Config, cache_channel: crossbeam_channel::Sender<v1::Resource>, cache_client: &'a Cache) -> Self{
+impl ConfigController {
+    pub fn new(name: String, config: Config, cache_channel: crossbeam_channel::Sender<v1::Resource>, cache_client: Cache) -> Self{
         Self{
             name: name,
             config: config,
@@ -41,11 +41,11 @@ impl<'a> ConfigController<'a> {
     //pub async fn start(name: String, config: Config) -> Vec<tokio::task::JoinHandle<Result<(), Box<dyn Error + Send>>>> {
         println!("starting config_controller");
         let mut join_handles: Vec<tokio::task::JoinHandle<Result<(), Box<dyn Error + Send>>>> = Vec::new();
-        
+
         let cn2_config = self.config.cn2.unwrap();
         if cn2_config.enabled.unwrap(){
             let cn2_config_controller = CN2ConfigController::new(self.name.clone(), cn2_config);
-            let res = run(cn2_config_controller, self.cache_channel.clone());
+            let res = run(cn2_config_controller, self.cache_channel.clone(),self.cache_client.clone());
             let join_handle = tokio::task::spawn(res);
             join_handles.push(join_handle);
         }
@@ -53,7 +53,7 @@ impl<'a> ConfigController<'a> {
         let cli_config = self.config.cli.unwrap();
         if cli_config.enabled.unwrap(){
             let cli_config_controller = CLIConfigController::new(self.name.clone(), cli_config);
-            let cli_res = run(cli_config_controller, self.cache_channel.clone());
+            let cli_res = run(cli_config_controller, self.cache_channel.clone(), self.cache_client.clone());
             let cli_join_handle = tokio::task::spawn(cli_res);
             join_handles.push(cli_join_handle);
         }
@@ -63,9 +63,9 @@ impl<'a> ConfigController<'a> {
     }
 }
 
-pub async fn run<T: 'static + ConfigControllerInterface>(controller: T, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn std::error::Error + Send>> {
+pub async fn run<T: 'static + ConfigControllerInterface>(controller: T, cache_channel: crossbeam_channel::Sender<v1::Resource>, cc: Cache) -> Result<(), Box<dyn std::error::Error + Send>> {
     println!("running config_controller {}", controller.name());
-    let res = controller.run(cache_channel);
+    let res = controller.run(cache_channel, cc);
     res.await
 }
 

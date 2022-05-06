@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config_controller_client = config_controller::config_controller::ConfigController::new(config.name.unwrap(), 
         config.config_controller.unwrap(),
-        sender, cache_client.borrow());
+        sender, cache_client.clone());
     let config_controller_runner = config_controller_client.run();
     
     let (config_res, cache_res) = tokio::join!(config_controller_runner, cache_runner);

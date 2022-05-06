@@ -62,7 +62,7 @@ impl ConfigControllerInterface for CLIConfigController{
         Ok(())
     }
     */
-    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn std::error::Error + Send>> {
+    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>, cc: Cache) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cli plugin");
         let addr = "[::1]:50051".parse().unwrap();
         let cli_service = CliService{

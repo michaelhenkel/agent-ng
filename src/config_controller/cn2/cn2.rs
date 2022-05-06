@@ -14,6 +14,7 @@ use futures;
 use futures::future::TryFutureExt;
 use crate::config_controller::config_controller::ConfigControllerInterface;
 use async_trait::async_trait;
+use crate::cache_controller::cache::Cache;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -40,7 +41,7 @@ impl ConfigControllerInterface for CN2ConfigController{
     fn name(&self) -> String{
         "CN2ConfigController".to_string()
     }
-    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn std::error::Error + Send>> {
+    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>, cc: Cache) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cn2 plugin");
         let server = string_to_static_str(self.config.server.unwrap());
         let channel = Endpoint::from_static(server)
