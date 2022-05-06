@@ -4,12 +4,12 @@ use serde::Deserialize;
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 use agent_ng::cli_protos::agentcli::cli_server::{Cli, CliServer};
 use agent_ng::cli_protos::agentcli::{Command, Reply};
-use crate::cache_controller::cache::Cache;
+use crate::cache_controller::cache::{Cache, Key};
 use tonic::{transport::Server, Request, Response, Status};
 
 #[derive(Debug)]
 pub struct CliService {
-    cache_channel: crossbeam_channel::Sender<v1::Resource>,
+    cache_client: Cache,
 }
 
 #[tonic::async_trait]
@@ -24,6 +24,8 @@ impl Cli for CliService {
 
         });
         */
+        let resource = self.cache_client.get(Key { name:"default-podnetwork".to_string(), namespace: "contrail-k8s-kubemanager-cluster1-local-contrail".to_string(), kind: "VirtualNetwork".to_string() });
+        println!("resource: {:?}", resource);
         let reply = Reply {
             message: format!("Hello {}!", request.into_inner().cmd).into(), // We must use .into_inner() as the fields of gRPC requests and responses are private
         };
@@ -62,11 +64,11 @@ impl ConfigControllerInterface for CLIConfigController{
         Ok(())
     }
     */
-    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>, cc: Cache) -> Result<(), Box<dyn std::error::Error + Send>> {
+    async fn run(self, cc: Cache) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cli plugin");
         let addr = "[::1]:50051".parse().unwrap();
         let cli_service = CliService{
-            cache_channel: cache_channel,
+            cache_client: cc,
         };
     
         Server::builder()

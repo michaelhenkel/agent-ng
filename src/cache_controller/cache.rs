@@ -5,7 +5,7 @@ use super::graph::Graph;
 use std::hash::{Hash, Hasher};
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Cache {
     receiver: crossbeam_channel::Receiver<v1::Resource>,
     sender: crossbeam_channel::Sender<v1::Resource>,
@@ -13,7 +13,10 @@ pub struct Cache {
     r1: crossbeam_channel::Receiver<v1::Resource>,
 }
 
-
+pub enum Action{
+    Add(v1::Resource),
+    Get(Key),
+}
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub struct Key {
@@ -33,22 +36,28 @@ impl Key {
 }
 
 impl Cache {
-    pub fn new(receiver: crossbeam_channel::Receiver<v1::Resource>, sender: crossbeam_channel::Sender<v1::Resource>) -> Self {
+    pub fn new() -> Self {
+        let (sender, receiver): (crossbeam_channel::Sender<v1::Resource>, crossbeam_channel::Receiver<v1::Resource>) = crossbeam_channel::unbounded();
         let (s1, r1): (crossbeam_channel::Sender<v1::Resource>, crossbeam_channel::Receiver<v1::Resource>) = crossbeam_channel::unbounded();
         Self{
             receiver: receiver,
             sender: sender,
-            r1: r1,
             s1: s1,
+            r1: r1,
         }
     }
 
-    pub fn get(&self) -> v1::Resource{
+    pub fn get(&self, key: Key) -> v1::Resource{
         let mut res = v1::Resource::default();
         res.action = i32::from(v1::resource::Action::Get);
         self.sender.send(res);
         let reply = self.r1.recv().unwrap();
         reply
+    }
+
+    pub fn add(&self, mut resource: v1::Resource) {
+        resource.action = i32::from(v1::resource::Action::Add);
+        self.sender.send(resource);
     }
 
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error + Send>> {
@@ -88,6 +97,7 @@ impl Cache {
                 },
                 Some(v1::resource::Action::Get) => {
                     println!("get");
+                    /*
                     let from = Key { name: "".to_string(), namespace: "".to_string(), kind: "".to_string() };
                     let to = Key { name: "".to_string(), namespace: "".to_string(), kind: "".to_string() };
                     let mut filter = Vec::new();
@@ -97,7 +107,8 @@ impl Cache {
                         let resource = resource_cache.get(res).unwrap();
                         self.s1.send(resource.clone());
                     }
-
+                    */
+                    let resource = resource_cache.get(res).unwrap();
                 },
                 _ => { break; },
             }

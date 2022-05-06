@@ -9,15 +9,11 @@ use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::config::load().unwrap();
-
-    let (sender, receiver): (crossbeam_channel::Sender<v1::Resource>, crossbeam_channel::Receiver<v1::Resource>) = unbounded();
     
-    let cache_client: cache_controller::cache::Cache = cache_controller::cache::Cache::new(receiver, sender.clone());
+    let cache_client: cache_controller::cache::Cache = cache_controller::cache::Cache::new();
     let cache_runner = cache_client.run();
 
-    let config_controller_client = config_controller::config_controller::ConfigController::new(config.name.unwrap(), 
-        config.config_controller.unwrap(),
-        sender, cache_client.clone());
+    let config_controller_client = config_controller::config_controller::ConfigController::new(config.name.unwrap(), config.config_controller.unwrap(), cache_client.clone());
     let config_controller_runner = config_controller_client.run();
     
     let (config_res, cache_res) = tokio::join!(config_controller_runner, cache_runner);

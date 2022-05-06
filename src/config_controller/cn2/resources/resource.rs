@@ -14,7 +14,7 @@ impl ResourceController {
     pub fn new() -> Self {
         Self{}
     }
-    pub async fn run(self, channel: tonic::transport::Channel, receiver: crossbeam_channel::Receiver<v1::Resource>, sender: crossbeam_channel::Sender<v1::Resource>, resource_interface: Box<dyn ResourceInterface + Send>, name: String, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn Error + Send >> {
+    pub async fn run(self, channel: tonic::transport::Channel, receiver: crossbeam_channel::Receiver<v1::Resource>, sender: crossbeam_channel::Sender<v1::Resource>, resource_interface: Box<dyn ResourceInterface + Send>, name: String) -> Result<(), Box<dyn Error + Send >> {
         let mut w_map: HashMap<String,v1::Resource> = HashMap::new();
         let mut r_map: HashMap<String,v1::Resource> = HashMap::new();
         let mut client = ConfigControllerClient::new(channel.clone());
@@ -34,7 +34,7 @@ impl ResourceController {
                     } else {
                         w_map.insert(resource_key, resource.clone());
                         //println!("not in WQ, pushing it and starting process");
-                        resource_interface.process(&mut client, sender.clone(), resource.clone(), cache_channel.clone()).await;
+                        resource_interface.process(&mut client, sender.clone(), resource.clone()).await;
                     }
                 },
                 Some(v1::resource::Action::Del) => {
@@ -64,7 +64,7 @@ impl ResourceController {
                     if r_map.contains_key(&resource_key) {
                         r_map.remove(&resource_key);
                     }
-                    resource_interface.process(&mut client, sender.clone(), resource.clone(), cache_channel.clone()).await;
+                    resource_interface.process(&mut client, sender.clone(), resource.clone()).await;
                 },
                 _ => { break; },
             }
@@ -76,7 +76,7 @@ impl ResourceController {
 
 #[async_trait]
 pub trait ResourceInterface: Send + Sync{
-    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::Resource>, resource: v1::Resource, cache_channel: crossbeam_channel::Sender<v1::Resource>);
+    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::Resource>, resource: v1::Resource);
 
 }
 

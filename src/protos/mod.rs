@@ -2,11 +2,6 @@ pub mod k8s {
     pub mod io {
         pub mod apimachinery {
             pub mod pkg {
-                pub mod util {
-                    pub mod intstr {
-                        include!("k8s.io.apimachinery.pkg.util.intstr.rs");
-                    }
-                }
                 pub mod api {
                     pub mod resource {
                         include!("k8s.io.apimachinery.pkg.api.resource.rs");
@@ -17,6 +12,11 @@ pub mod k8s {
                         include!("k8s.io.apimachinery.pkg.runtime.schema.rs");
                     }
                     include!("k8s.io.apimachinery.pkg.runtime.rs");
+                }
+                pub mod util {
+                    pub mod intstr {
+                        include!("k8s.io.apimachinery.pkg.util.intstr.rs");
+                    }
                 }
                 pub mod apis {
                     pub mod meta {
@@ -36,6 +36,21 @@ pub mod k8s {
         }
     }
 }
+pub mod github {
+    pub mod com {
+        pub mod michaelhenkel {
+            pub mod config_controller {
+                pub mod pkg {
+                    pub mod apis {
+                        pub mod v1 {
+                            include!("github.com.michaelhenkel.config_controller.pkg.apis.v1.rs");
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 pub mod ssd_git {
     pub mod juniper {
         pub mod net {
@@ -50,21 +65,6 @@ pub mod ssd_git {
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-pub mod github {
-    pub mod com {
-        pub mod michaelhenkel {
-            pub mod config_controller {
-                pub mod pkg {
-                    pub mod apis {
-                        pub mod v1 {
-                            include!("github.com.michaelhenkel.config_controller.pkg.apis.v1.rs");
                         }
                     }
                 }
