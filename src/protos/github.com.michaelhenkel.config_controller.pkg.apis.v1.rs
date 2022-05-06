@@ -24,6 +24,7 @@ pub mod resource {
         Add = 0,
         Del = 1,
         Retry = 2,
+        Get = 3,
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

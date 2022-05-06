@@ -5,8 +5,11 @@ use super::graph::Graph;
 use std::hash::{Hash, Hasher};
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 
-pub struct cache {
+pub struct Cache {
     receiver: crossbeam_channel::Receiver<v1::Resource>,
+    sender: crossbeam_channel::Sender<v1::Resource>,
+    s1: crossbeam_channel::Sender<v1::Resource>,
+    r1: crossbeam_channel::Receiver<v1::Resource>,
 }
 
 
@@ -28,20 +31,34 @@ impl Key {
     }
 }
 
-impl cache {
-    pub fn new(receiver: crossbeam_channel::Receiver<v1::Resource>) -> Self {
+impl Cache {
+    pub fn new(receiver: crossbeam_channel::Receiver<v1::Resource>, sender: crossbeam_channel::Sender<v1::Resource>) -> Self {
+        let (s1, r1): (crossbeam_channel::Sender<v1::Resource>, crossbeam_channel::Receiver<v1::Resource>) = crossbeam_channel::unbounded();
         Self{
             receiver: receiver,
+            sender: sender,
+            r1: r1,
+            s1: s1,
         }
     }
+
+    pub fn get(&self) -> v1::Resource{
+        let mut res = v1::Resource::default();
+        res.action = i32::from(v1::resource::Action::Get);
+        self.sender.send(res);
+        let reply = self.r1.recv().unwrap();
+        reply
+    }
+
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error + Send>> {
-        //let mut resource_cache: LruCache<Key, v1::Resource> = LruCache::unbounded();
+        let mut resource_cache: LruCache<Key, v1::Resource> = LruCache::unbounded();
         println!("starting cache");
         let mut g = Graph::new();
         loop{
             let resource = self.receiver.recv().unwrap();
             match v1::resource::Action::from_i32(resource.action){
                 Some(v1::resource::Action::Add) => {
+                    resource_cache.push(Key::create(resource.clone()), resource.clone());
                     let result = g.add_node(Key::create(resource.clone()), resource.clone());
                     if resource.references.len() > 0 {
                         for reference in &resource.references {
@@ -67,6 +84,19 @@ impl cache {
                 },
                 Some(v1::resource::Action::Retry) => {
                     println!("retry");
+                },
+                Some(v1::resource::Action::Get) => {
+                    println!("get");
+                    let from = Key { name: "".to_string(), namespace: "".to_string(), kind: "".to_string() };
+                    let to = Key { name: "".to_string(), namespace: "".to_string(), kind: "".to_string() };
+                    let mut filter = Vec::new();
+                    filter.push("bla".to_string());
+                    let mut result = g.traverse(from, to, filter);
+                    for res in &result {
+                        let resource = resource_cache.get(res).unwrap();
+                        self.s1.send(resource.clone());
+                    }
+
                 },
                 _ => { break; },
             }

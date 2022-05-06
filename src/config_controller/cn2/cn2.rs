@@ -12,7 +12,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use futures;
 use futures::future::TryFutureExt;
-use crate::config_controller::config_controller::ConfigController;
+use crate::config_controller::config_controller::ConfigControllerInterface;
 use async_trait::async_trait;
 
 #[derive(Deserialize, Debug)]
@@ -36,7 +36,7 @@ impl CN2ConfigController{
 }
 
 #[async_trait]
-impl ConfigController for CN2ConfigController{
+impl ConfigControllerInterface for CN2ConfigController{
     fn name(&self) -> String{
         "CN2ConfigController".to_string()
     }

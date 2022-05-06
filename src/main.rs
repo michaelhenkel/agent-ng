@@ -1,6 +1,8 @@
 mod config_controller;
 mod config;
 mod cache_controller;
+use std::borrow::Borrow;
+
 use crossbeam_channel::unbounded;
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 
@@ -10,12 +12,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (sender, receiver): (crossbeam_channel::Sender<v1::Resource>, crossbeam_channel::Receiver<v1::Resource>) = unbounded();
     
-    let cache = cache_controller::cache::cache::new(receiver);
-    let cache_runner = cache.run();
+    let cache_client: cache_controller::cache::Cache = cache_controller::cache::Cache::new(receiver, sender.clone());
+    let cache_runner = cache_client.run();
 
-    let cc = config_controller::config_controller::start(config.name.unwrap(), config.config_controller.unwrap(), sender);
+    let config_controller_client = config_controller::config_controller::ConfigController::new(config.name.unwrap(), 
+        config.config_controller.unwrap(),
+        sender, cache_client.borrow());
+    let config_controller_runner = config_controller_client.run();
     
-    let (config_res, cache_res) = tokio::join!(cc, cache_runner);
+    let (config_res, cache_res) = tokio::join!(config_controller_runner, cache_runner);
     //futures::future::join_all(cc);
     
     //let join_handle = tokio::task::spawn(cc);
