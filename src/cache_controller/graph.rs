@@ -1,23 +1,24 @@
-use super::cache::Key;
 use std::collections::{HashMap, VecDeque};
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
+use super::cache::CacheKey;
 
 
+#[derive(Clone)]
 pub struct Graph{
-    nodes: HashMap<Key, v1::Resource>,
-    edges: HashMap<Key, Vec<Key>>,
+    nodes: HashMap<CacheKey, CacheKey>,
+    edges: HashMap<CacheKey, Vec<CacheKey>>,
 }
 
 impl Graph{
     pub fn new() -> Self{
-        let edges: HashMap<Key, Vec<Key>> = HashMap::new();
+        let edges: HashMap<CacheKey, Vec<CacheKey>> = HashMap::new();
         Self{
             nodes: HashMap::new(),
             edges: edges,
         }
     }
 
-    pub fn add_node(&mut self, key: Key, node: v1::Resource) -> Option<v1::Resource> {
+    pub fn add_node(&mut self, key: CacheKey, node: CacheKey) -> Option<CacheKey> {
         self.nodes.insert(key, node)
     }
 
@@ -25,10 +26,10 @@ impl Graph{
         println!("nodes: {:?}", self.nodes);
         println!("edges: {:?}", self.edges);
     }
-    pub fn add_edge(&mut self, n1: Key, n2: Key){
+    pub fn add_edge(&mut self, n1: CacheKey, n2: CacheKey){
         match self.edges.get_mut(&n1){
             None => {
-                let mut edge_refs: Vec<Key> = Vec::new();
+                let mut edge_refs: Vec<CacheKey> = Vec::new();
                 edge_refs.push(n2);
                 self.edges.insert(n1, edge_refs);
             },
@@ -39,12 +40,12 @@ impl Graph{
             },
         }
     }
-    pub fn traverse(&mut self, from: Key, to: Key, filter: Vec<String>) -> Vec<Key>{
-        let mut result: Vec<Key> = Vec::new();
+    pub fn traverse(&mut self, from: CacheKey, to: CacheKey, filter: Vec<String>) -> Vec<CacheKey>{
+        let mut result: Vec<CacheKey> = Vec::new();
         let mut queue = VecDeque::new();
         if self.nodes.contains_key(&from) {
             queue.push_back(from);
-            let mut visited: HashMap<Key, bool> = HashMap::new();
+            let mut visited: HashMap<CacheKey, bool> = HashMap::new();
             loop {
                 if queue.len() == 0 {
                     break;

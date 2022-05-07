@@ -3,42 +3,55 @@ use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::
 use std::collections::HashMap;
 use std::vec::Vec;
 use std::error::Error;
+use crate::cache_controller::cache;
 use crate::config_controller::cn2::resources;
 use async_trait::async_trait;
 
 pub struct ResourceController {
-
+    cache_client: cache::Cache,
+    channel: tonic::transport::Channel,
+    receiver: crossbeam_channel::Receiver<v1::KeyAction>,
+    sender: crossbeam_channel::Sender<v1::KeyAction>,
+    resource_interface: Box<dyn ResourceInterface + Send>,
+    name: String,
 }
 
 impl ResourceController {
-    pub fn new() -> Self {
-        Self{}
+    pub fn new(cache_client: cache::Cache, channel: tonic::transport::Channel, receiver: crossbeam_channel::Receiver<v1::KeyAction>, sender: crossbeam_channel::Sender<v1::KeyAction>,resource_interface: Box<dyn ResourceInterface + Send>, name: String) -> Self {
+        Self{
+            cache_client: cache_client,
+            channel: channel,
+            receiver: receiver,
+            sender: sender,
+            name: name,
+            resource_interface: resource_interface,
+        }
     }
-    pub async fn run(self, channel: tonic::transport::Channel, receiver: crossbeam_channel::Receiver<v1::Resource>, sender: crossbeam_channel::Sender<v1::Resource>, resource_interface: Box<dyn ResourceInterface + Send>, name: String) -> Result<(), Box<dyn Error + Send >> {
-        let mut w_map: HashMap<String,v1::Resource> = HashMap::new();
-        let mut r_map: HashMap<String,v1::Resource> = HashMap::new();
-        let mut client = ConfigControllerClient::new(channel.clone());
-        println!("Starting ResourceController for {}", name);
+    pub async fn run(self) -> Result<(), Box<dyn Error + Send >> {
+        let mut w_map: HashMap<String,v1::Key> = HashMap::new();
+        let mut r_map: HashMap<String,v1::Key> = HashMap::new();
+        let mut client = ConfigControllerClient::new(self.channel.clone());
+        println!("Starting ResourceController for {}", self.name);
         loop{
-            let resource = receiver.recv().unwrap();
-            match v1::resource::Action::from_i32(resource.action){
-               Some(v1::resource::Action::Add) => {
-                   let resource_key = format!("{}/{}/{}", resource.clone().kind, resource.clone().namespace, resource.clone().name);
+            let mut key_action = self.receiver.recv().unwrap();
+            match v1::key_action::Action::from_i32(key_action.clone().action){
+               Some(v1::key_action::Action::Add) => {
+                   let resource_key = format!("{}/{}/{}", key_action.clone().key.unwrap().kind, key_action.clone().key.unwrap().namespace, key_action.clone().key.unwrap().name);
                    //println!("Add {}", resource_key.clone());
                     if w_map.contains_key(&resource_key) {
                         //println!("in WQ");
                         if !r_map.contains_key(&resource_key){
                             //println!("not in RQ, pushing it");
-                            r_map.insert(resource_key, resource.clone());
+                            r_map.insert(resource_key, key_action.clone().key.unwrap());
                         }
                     } else {
-                        w_map.insert(resource_key, resource.clone());
+                        w_map.insert(resource_key, key_action.clone().key.unwrap());
                         //println!("not in WQ, pushing it and starting process");
-                        resource_interface.process(&mut client, sender.clone(), resource.clone()).await;
+                        self.resource_interface.process(&mut client, self.sender.clone(), key_action.clone().key.unwrap(), self.cache_client.clone()).await;
                     }
                 },
-                Some(v1::resource::Action::Del) => {
-                    let resource_key = format!("{}/{}/{}", resource.kind, resource.namespace, resource.name);
+                Some(v1::key_action::Action::Del) => {
+                    let resource_key = format!("{}/{}/{}", key_action.clone().key.unwrap().kind, key_action.clone().key.unwrap().namespace, key_action.clone().key.unwrap().name);
                     //println!("Del");
                     if w_map.contains_key(&resource_key) {
                         //println!("in WQ, removing it");
@@ -49,22 +62,16 @@ impl ResourceController {
                     if r_map.contains_key(&resource_key){
                         //println!("in RQ, removing it and send it");
                         r_map.remove(&resource_key);
-                        let resource = v1::Resource{
-                            name: resource.name,
-                            namespace: resource.namespace,
-                            kind: resource.kind,
-                            action: i32::from(v1::resource::Action::Add),
-                            references: resource.references,
-                        };
-                        sender.send(resource).unwrap();
+                        key_action.action = i32::from(v1::key_action::Action::Add);
+                        self.sender.send(key_action.clone()).unwrap();
                     }
                 },
-                Some(v1::resource::Action::Retry) => {
-                    let resource_key = format!("{}/{}/{}", resource.kind, resource.namespace, resource.name);
+                Some(v1::key_action::Action::Retry) => {
+                    let resource_key = format!("{}/{}/{}", key_action.clone().key.unwrap().kind, key_action.clone().key.unwrap().namespace, key_action.clone().key.unwrap().name);
                     if r_map.contains_key(&resource_key) {
                         r_map.remove(&resource_key);
                     }
-                    resource_interface.process(&mut client, sender.clone(), resource.clone()).await;
+                    self.resource_interface.process(&mut client, self.sender.clone(), key_action.clone().key.unwrap(), self.cache_client.clone()).await;
                 },
                 _ => { break; },
             }
@@ -76,7 +83,7 @@ impl ResourceController {
 
 #[async_trait]
 pub trait ResourceInterface: Send + Sync{
-    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::Resource>, resource: v1::Resource);
+    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::KeyAction>, key: v1::Key, cache_client: cache::Cache);
 
 }
 

@@ -2,9 +2,9 @@ use crate::config_controller::config_controller::ConfigControllerInterface;
 use async_trait::async_trait;
 use serde::Deserialize;
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
-use agent_ng::cli_protos::agentcli::cli_server::{Cli, CliServer};
-use agent_ng::cli_protos::agentcli::{Command, Reply};
-use crate::cache_controller::cache::{Cache, Key};
+use agent_ng::protos::ssd_git::juniper::net::contrail::cn2::contrail::pkg::apis::core::v1alpha1;
+use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1::cli_server::{Cli, CliServer};
+use crate::cache_controller::cache::Cache;
 use tonic::{transport::Server, Request, Response, Status};
 
 #[derive(Debug)]
@@ -14,23 +14,26 @@ pub struct CliService {
 
 #[tonic::async_trait]
 impl Cli for CliService {
-    async fn send_cmd(
+    async fn get(
         &self,
-        request: Request<Command>, // Accept request of type HelloRequest
-    ) -> Result<Response<Reply>, Status> { // Return an instance of type HelloReply
+        request: Request<v1::Key>, // Accept request of type HelloRequest
+    ) -> Result<Response<v1::Resource>, Status> { // Return an instance of type HelloReply
         println!("Got a request: {:?}", request);
         /*
         self.cache_channel.send(v1::Resource{
 
         });
         */
-        let resource = self.cache_client.get(Key { name:"default-podnetwork".to_string(), namespace: "contrail-k8s-kubemanager-cluster1-local-contrail".to_string(), kind: "VirtualNetwork".to_string() });
+        let resource = self.cache_client.get(request.into_inner());
+        /*
         println!("resource: {:?}", resource);
-        let reply = Reply {
-            message: format!("Hello {}!", request.into_inner().cmd).into(), // We must use .into_inner() as the fields of gRPC requests and responses are private
+        let reply = agentcli::Resource {
+            resource: agentcli::Resource{
+                resource: alphav1::V
+            },
         };
-
-        Ok(Response::new(reply)) // Send back our formatted greeting
+        */
+        Ok(Response::new(resource)) // Send back our formatted greeting
     }
 }
 

@@ -3,6 +3,7 @@ use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::
 use crate::config_controller::cn2::resources::resource::{ResourceInterface};
 use agent_ng::protos::ssd_git::juniper::net::contrail::cn2::contrail::pkg::apis::core::v1alpha1;
 use async_trait::async_trait;
+use crate::cache_controller::cache::{Cache, ResourceKeyReferences};
 
 #[derive(Copy,Clone)]
 pub struct VirtualMachineInterfaceController {}
@@ -15,10 +16,10 @@ impl VirtualMachineInterfaceController {
 
 #[async_trait]
 impl ResourceInterface for VirtualMachineInterfaceController{
-    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::Resource>, resource: v1::Resource){
+    async fn process(&self, client: &mut ConfigControllerClient<tonic::transport::Channel>, sender: crossbeam_channel::Sender<v1::KeyAction>, key: v1::Key, cache_client: Cache){
         let mut client = client.clone();
         tokio::spawn(async move {
-            let res_result: Result<tonic::Response<v1alpha1::VirtualMachineInterface>, tonic::Status> = client.get_virtual_machine_interface(resource.clone()).await;
+            let res_result: Result<tonic::Response<v1alpha1::VirtualMachineInterface>, tonic::Status> = client.get_virtual_machine_interface(key.clone()).await;
             match res_result {
                 Ok(mut res) => {
                     let res: &mut v1alpha1::VirtualMachineInterface = res.get_mut();
@@ -26,6 +27,10 @@ impl ResourceInterface for VirtualMachineInterfaceController{
                     println!("{}/{}", res.metadata.as_ref().unwrap().namespace(), res.metadata.as_ref().unwrap().name());
                     println!("labels {:?}", res.metadata.as_ref().unwrap().labels);
                     println!("##########Done: VirtualMachineInterface##########");
+                    let key_action = v1::KeyAction{
+                        key: Some(key.clone()),
+                        action: i32::from(v1::key_action::Action::Del),
+                    };
                     let mut ref_list: Vec<v1alpha1::ResourceReference> = Vec::new();
                     let virtual_network_ref = res.spec.as_ref().unwrap().virtual_network_reference.to_owned().unwrap();
                     ref_list.push(virtual_network_ref);
@@ -33,37 +38,23 @@ impl ResourceInterface for VirtualMachineInterfaceController{
                     ref_list.append(&mut virtual_machine_refs);
                     let mut virtual_machine_interface_refs = res.spec.as_ref().unwrap().virtual_machine_interface_references.to_owned();
                     ref_list.append(&mut virtual_machine_interface_refs);
-                    let mut resource = v1::Resource{
-                        name: resource.name,
-                        namespace: resource.namespace,
-                        kind: resource.kind,
-                        action: i32::from(v1::resource::Action::Del),
-                        references: ref_list,
-                    };
-                    sender.send(resource.clone()).unwrap();
-                    resource.action = i32::from(v1::resource::Action::Add);
-                    //cache_channel.send(resource.clone()).unwrap();
+                    cache_client.add(ResourceKeyReferences::VirtualMachineInterface(res.clone(), key.clone(), ref_list));
+                    sender.send(key_action.clone()).unwrap();
                 },
                 Err(err) => {
                     if err.code() == tonic::Code::NotFound {
-                        let resource = v1::Resource{
-                            name: resource.name,
-                            namespace: resource.namespace,
-                            kind: resource.kind,
-                            action: i32::from(v1::resource::Action::Del),
-                            references: resource.references,
+                        let key_action = v1::KeyAction{
+                            key: Some(key),
+                            action: i32::from(v1::key_action::Action::Del),
                         };
-                        sender.send(resource).unwrap();
+                        sender.send(key_action).unwrap();
                     } else {
                         println!("err {:?}", err);
-                        let resource = v1::Resource{
-                            name: resource.name,
-                            namespace: resource.namespace,
-                            kind: resource.kind,
-                            action: i32::from(v1::resource::Action::Retry),
-                            references: resource.references,
+                        let key_action = v1::KeyAction{
+                            key: Some(key),
+                            action: i32::from(v1::key_action::Action::Retry),
                         };
-                        sender.send(resource).unwrap();
+                        sender.send(key_action).unwrap();
                     }
                 },
             }

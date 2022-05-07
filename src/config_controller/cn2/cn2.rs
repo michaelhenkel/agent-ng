@@ -25,13 +25,15 @@ pub struct Config {
 pub struct CN2ConfigController {
     config: Config,
     name: String,
+    cache_client: Cache,
 }
 
 impl CN2ConfigController{
-    pub fn new(name: String, config: Config) -> Self {
+    pub fn new(name: String, config: Config, cache_client: Cache) -> Self {
         Self{
             config,
             name,
+            cache_client,
         }
     }    
 }
@@ -47,16 +49,15 @@ impl ConfigControllerInterface for CN2ConfigController{
         let channel = Endpoint::from_static(server)
             .connect()
             .await.unwrap();
-        let sender_map: Arc<Mutex<HashMap<String,crossbeam_channel::Sender<v1::Resource>>>> = Arc::new(Mutex::new(HashMap::new()));
+        let sender_map: Arc<Mutex<HashMap<String,crossbeam_channel::Sender<v1::KeyAction>>>> = Arc::new(Mutex::new(HashMap::new()));
         let mut join_handles = Vec::new();
         for r in res_list(){
-            let (sender, receiver): (crossbeam_channel::Sender<v1::Resource>, crossbeam_channel::Receiver<v1::Resource>) = unbounded();
+            let (sender, receiver): (crossbeam_channel::Sender<v1::KeyAction>, crossbeam_channel::Receiver<v1::KeyAction>) = unbounded();
             let mut sender_map = sender_map.lock().await;
-            let sender_clone = sender.clone();
-            sender_map.insert(r.to_string(), sender);
-            let rc = ResourceController::new();
+            sender_map.insert(r.to_string(), sender.clone());
             let res = get_res(r.clone());
-            let run_res = rc.run(channel.clone(), receiver, sender_clone, res, r.to_string()).map_err(|_| "Unable to get book".to_string());
+            let rc = ResourceController::new(self.cache_client.clone(),channel.clone(), receiver, sender.clone(), res, r.to_string());
+            let run_res = rc.run().map_err(|_| "Unable to get book".to_string());
             let join_handle = tokio::task::spawn(run_res);
             join_handles.push(join_handle);
         }
@@ -73,7 +74,7 @@ fn string_to_static_str(s: String) -> &'static str {
     Box::leak(s.into_boxed_str())
 }
 
-async fn subscribe(channel: tonic::transport::Channel, sender_map: Arc<Mutex<HashMap<String,crossbeam_channel::Sender<v1::Resource>>>>, name: String) -> Result<(), Box<dyn Error>> {
+async fn subscribe(channel: tonic::transport::Channel, sender_map: Arc<Mutex<HashMap<String,crossbeam_channel::Sender<v1::KeyAction>>>>, name: String) -> Result<(), Box<dyn Error>> {
     println!("started subscriber_controller");
     let mut client = ConfigControllerClient::new(channel.clone());
     let request = tonic::Request::new(SubscriptionRequest {
@@ -85,10 +86,10 @@ async fn subscribe(channel: tonic::transport::Channel, sender_map: Arc<Mutex<Has
         .await?
         .into_inner();
 
-    while let Some(resource) = stream.message().await? {
+    while let Some(key_action) = stream.message().await? {
         let sender_map = sender_map.lock().await;
-        if let Some(sender) = sender_map.get(resource.kind.as_str()) {
-            if let Err(err) = sender.send(resource){
+        if let Some(sender) = sender_map.get(key_action.clone().key.unwrap().kind.as_str()) {
+            if let Err(err) = sender.send(key_action){
                 println!("{:?}", err);
             }
         }
