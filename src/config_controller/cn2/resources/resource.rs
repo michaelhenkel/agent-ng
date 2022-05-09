@@ -37,30 +37,21 @@ impl ResourceController {
             match v1::key_action::Action::from_i32(key_action.clone().action){
                Some(v1::key_action::Action::Add) => {
                    let resource_key = format!("{}/{}/{}", key_action.clone().key.unwrap().kind, key_action.clone().key.unwrap().namespace, key_action.clone().key.unwrap().name);
-                   //println!("Add {}", resource_key.clone());
                     if w_map.contains_key(&resource_key) {
-                        //println!("in WQ");
                         if !r_map.contains_key(&resource_key){
-                            //println!("not in RQ, pushing it");
                             r_map.insert(resource_key, key_action.clone().key.unwrap());
                         }
                     } else {
                         w_map.insert(resource_key, key_action.clone().key.unwrap());
-                        //println!("not in WQ, pushing it and starting process");
                         self.resource_interface.process(&mut client, self.sender.clone(), key_action.clone().key.unwrap(), self.cache_client.clone()).await;
                     }
                 },
                 Some(v1::key_action::Action::Del) => {
                     let resource_key = format!("{}/{}/{}", key_action.clone().key.unwrap().kind, key_action.clone().key.unwrap().namespace, key_action.clone().key.unwrap().name);
-                    //println!("Del");
                     if w_map.contains_key(&resource_key) {
-                        //println!("in WQ, removing it");
                         w_map.remove(&resource_key);
-                    }// else {
-                    //    println!("not in WQ");
-                    //}
+                    }
                     if r_map.contains_key(&resource_key){
-                        //println!("in RQ, removing it and send it");
                         r_map.remove(&resource_key);
                         key_action.action = i32::from(v1::key_action::Action::Add);
                         self.sender.send(key_action.clone()).unwrap();

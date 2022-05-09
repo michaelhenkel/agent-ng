@@ -2,7 +2,7 @@ extern crate lru;
 
 use lru::LruCache;
 use super::graph::Graph;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 use agent_ng::protos::ssd_git::juniper::net::contrail::cn2::contrail::pkg::apis::core::v1alpha1;
 

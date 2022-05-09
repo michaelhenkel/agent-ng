@@ -42,7 +42,8 @@ impl ConfigController {
         let cn2_config = self.config.cn2.unwrap();
         if cn2_config.enabled.unwrap(){
             let cn2_config_controller = CN2ConfigController::new(self.name.clone(), cn2_config, self.cache_client.clone());
-            let res = run(cn2_config_controller,self.cache_client.clone());
+            let res = cn2_config_controller.run(self.cache_client.clone());
+            //let res = run(cn2_config_controller,self.cache_client.clone());
             let join_handle = tokio::task::spawn(res);
             join_handles.push(join_handle);
         }

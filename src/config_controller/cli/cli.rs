@@ -17,23 +17,10 @@ impl Cli for CliService {
     async fn get(
         &self,
         request: Request<v1::Key>, // Accept request of type HelloRequest
-    ) -> Result<Response<v1::Resource>, Status> { // Return an instance of type HelloReply
+    ) -> Result<Response<v1::Resource>, Status> {
         println!("Got a request: {:?}", request);
-        /*
-        self.cache_channel.send(v1::Resource{
-
-        });
-        */
         let resource = self.cache_client.get(request.into_inner());
-        /*
-        println!("resource: {:?}", resource);
-        let reply = agentcli::Resource {
-            resource: agentcli::Resource{
-                resource: alphav1::V
-            },
-        };
-        */
-        Ok(Response::new(resource)) // Send back our formatted greeting
+        Ok(Response::new(resource))
     }
 }
 
@@ -61,12 +48,6 @@ impl ConfigControllerInterface for CLIConfigController{
     fn name(&self) -> String{
         "CLIConfigController".to_string()
     }
-    /*
-    async fn run(self, cache_channel: crossbeam_channel::Sender<v1::Resource>) -> Result<(), Box<dyn std::error::Error + Send>> {
-        println!("running cli plugin");
-        Ok(())
-    }
-    */
     async fn run(self, cc: Cache) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cli plugin");
         let addr = "[::1]:50051".parse().unwrap();
@@ -81,15 +62,3 @@ impl ConfigControllerInterface for CLIConfigController{
         Ok(())
     }
 }
-
-/*
-use tonic::{transport::Server, Request, Response, Status};
-
-use hello_world::greeter_server::{Greeter, GreeterServer};
-use hello_world::{HelloReply, HelloRequest};
-
-pub mod hello_world {
-    tonic::include_proto!("helloworld"); // The string specified here must match the proto package name
-}
-
-*/
