@@ -84,7 +84,6 @@ impl Graph{
                         },
                         None => {},
                     };
-                    //let near = self.edges.get(&key).unwrap();
                 }
                 if key.kind == to.kind {
                     println!("found node {:?}", key);

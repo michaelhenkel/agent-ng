@@ -116,16 +116,6 @@ impl Cache {
     fn update_graph(&self, key: v1::Key, references: Vec<v1alpha1::ResourceReference>, g: &mut Graph) -> Result<(), NodeNotExist> {
         let result = g.add_node(to_cache_key(key.clone()), to_cache_key(key.clone()));
         if references.len() > 0 {
-/*
-            for reference in &references {
-                if reference.object_reference.as_ref().unwrap().kind.as_ref().unwrap().to_string() == "VirtualMachine".to_string(){
-                    println!("VM");
-                }
-                if in_resource_list(reference.clone()) && !g.contains_node(reference_to_cache_key(reference.clone())){
-                    return Err(NodeNotExist)
-                }
-            };
-*/
             for reference in &references {
                 g.add_edge(CacheKey{
                     name: reference.object_reference.as_ref().unwrap().name.as_ref().unwrap().to_string(),
@@ -150,7 +140,6 @@ impl Cache {
                 println!("update");
             },
         }
-        g.print();
         Ok(())
     }    
 
@@ -252,8 +241,6 @@ impl Cache {
                 },
                 _ => { break; },
             }
-            println!("current graph: ");
-            graph.print();
         }
         
         Ok(())
