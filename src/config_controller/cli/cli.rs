@@ -22,6 +22,14 @@ impl Cli for CliService {
         let resource = self.cache_client.get(request.into_inner());
         Ok(Response::new(resource))
     }
+    async fn find(
+        &self,
+        request: Request<v1::FromToFilter>, // Accept request of type HelloRequest
+    ) -> Result<Response<v1::ResourceList>, Status> {
+        println!("Got a request: {:?}", request);
+        let resource = self.cache_client.find(request.into_inner());
+        Ok(Response::new(resource))
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -32,13 +40,15 @@ pub struct Config {
 pub struct CLIConfigController {
     config: Config,
     name: String,
+    cache_client: Cache,
 }
 
 impl CLIConfigController{
-    pub fn new(name: String, config: Config) -> Self {
+    pub fn new(name: String, config: Config, cache_client: Cache) -> Self {
         Self{
             config,
             name,
+            cache_client,
         }
     }    
 }
@@ -48,11 +58,11 @@ impl ConfigControllerInterface for CLIConfigController{
     fn name(&self) -> String{
         "CLIConfigController".to_string()
     }
-    async fn run(self, cc: Cache) -> Result<(), Box<dyn std::error::Error + Send>> {
+    async fn run(self) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cli plugin");
         let addr = "[::1]:50051".parse().unwrap();
         let cli_service = CliService{
-            cache_client: cc,
+            cache_client: self.cache_client.clone(),
         };
     
         Server::builder()

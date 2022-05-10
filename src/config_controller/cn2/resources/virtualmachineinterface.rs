@@ -38,8 +38,19 @@ impl ResourceInterface for VirtualMachineInterfaceController{
                     ref_list.append(&mut virtual_machine_refs);
                     let mut virtual_machine_interface_refs = res.spec.as_ref().unwrap().virtual_machine_interface_references.to_owned();
                     ref_list.append(&mut virtual_machine_interface_refs);
-                    cache_client.add(ResourceKeyReferences::VirtualMachineInterface(res.clone(), key.clone(), ref_list));
-                    sender.send(key_action.clone()).unwrap();
+                    let cache_add_result = cache_client.add(ResourceKeyReferences::VirtualMachineInterface(res.clone(), key.clone(), ref_list));
+                    match cache_add_result{
+                        Ok(()) => {
+                            sender.send(key_action).unwrap();
+                        },
+                        Err(e) => {
+                            let key_action = v1::KeyAction{
+                                key: Some(key),
+                                action: i32::from(v1::key_action::Action::Retry),
+                            };
+                            sender.send(key_action).unwrap();
+                        },
+                    };
                 },
                 Err(err) => {
                     if err.code() == tonic::Code::NotFound {

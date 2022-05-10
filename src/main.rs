@@ -1,10 +1,6 @@
 mod config_controller;
 mod config;
 mod cache_controller;
-use std::borrow::Borrow;
-
-use crossbeam_channel::unbounded;
-use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::v1;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -1,4 +1,18 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FromToFilter {
+    #[prost(message, optional, tag = "1")]
+    pub from: ::core::option::Option<Key>,
+    #[prost(message, optional, tag = "2")]
+    pub to: ::core::option::Option<Key>,
+    #[prost(string, repeated, tag = "3")]
+    pub filter: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResourceList {
+    #[prost(message, repeated, tag = "1")]
+    pub resources: ::prost::alloc::vec::Vec<Resource>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SubscriptionRequest {
     #[prost(string, tag = "1")]
     pub name: ::prost::alloc::string::String,
@@ -283,6 +297,22 @@ pub mod cli_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn find(
+            &mut self,
+            request: impl tonic::IntoRequest<super::FromToFilter>,
+        ) -> Result<tonic::Response<super::ResourceList>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/github.com.michaelhenkel.config_controller.pkg.apis.v1.Cli/Find",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
 }
 #[doc = r" Generated server implementations."]
@@ -384,6 +414,10 @@ pub mod cli_server {
             &self,
             request: tonic::Request<super::Key>,
         ) -> Result<tonic::Response<super::Resource>, tonic::Status>;
+        async fn find(
+            &self,
+            request: tonic::Request<super::FromToFilter>,
+        ) -> Result<tonic::Response<super::ResourceList>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct CliServer<T: Cli> {
@@ -442,6 +476,37 @@ pub mod cli_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/github.com.michaelhenkel.config_controller.pkg.apis.v1.Cli/Find" => {
+                    #[allow(non_camel_case_types)]
+                    struct FindSvc<T: Cli>(pub Arc<T>);
+                    impl<T: Cli> tonic::server::UnaryService<super::FromToFilter> for FindSvc<T> {
+                        type Response = super::ResourceList;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::FromToFilter>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).find(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = FindSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
                             accept_compression_encodings,

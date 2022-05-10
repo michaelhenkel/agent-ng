@@ -3,11 +3,12 @@ use agent_ng::protos::github::com::michaelhenkel::config_controller::pkg::apis::
 use super::cache::CacheKey;
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Graph{
     nodes: HashMap<CacheKey, CacheKey>,
     edges: HashMap<CacheKey, Vec<CacheKey>>,
 }
+
 
 impl Graph{
     pub fn new() -> Self{
@@ -20,6 +21,10 @@ impl Graph{
 
     pub fn add_node(&mut self, key: CacheKey, node: CacheKey) -> Option<CacheKey> {
         self.nodes.insert(key, node)
+    }
+
+    pub fn contains_node(&mut self, key: CacheKey) -> bool {
+        self.nodes.contains_key(&key)
     }
 
     pub fn print(&self) {
@@ -43,7 +48,9 @@ impl Graph{
     pub fn traverse(&mut self, from: CacheKey, to: CacheKey, filter: Vec<String>) -> Vec<CacheKey>{
         let mut result: Vec<CacheKey> = Vec::new();
         let mut queue = VecDeque::new();
+        println!("traversing graph from {:?} to {:?} with filter {:?}", from, to, filter);
         if self.nodes.contains_key(&from) {
+            println!("found root node {:?}", from);
             queue.push_back(from);
             let mut visited: HashMap<CacheKey, bool> = HashMap::new();
             loop {
@@ -53,29 +60,39 @@ impl Graph{
                 let key = queue.pop_front().unwrap();
                 visited.insert(key.clone(), true);
                 if key.kind != to.kind {
-                    let near = self.edges.get(&key).unwrap();
-                    for j in near{
-                        let mut ignore = false;
-                        if !filter.contains(&j.kind) {
-                            ignore = true;
-                        }
-                        let j_visited = visited.get(j);
-                        match j_visited{
-                            Some(true) => {
-                                if !ignore{
-                                    queue.push_back(j.clone());
-                                    visited.insert(j.clone(), true);
+                    let near_option = self.edges.get(&key);
+                    match near_option{
+                        Some(near) => {
+                            for j in near{
+                                let mut ignore = false;
+                                if !filter.contains(&j.kind) {
+                                    ignore = true;
                                 }
-                            },
-                            _ => {},
-                        }
-                    }
+                                let j_visited = visited.get(j);
+                                match j_visited{
+                                    Some(true) => {
+
+                                    },
+                                    _ => {
+                                        if !ignore{
+                                            queue.push_back(j.clone());
+                                            visited.insert(j.clone(), true);
+                                        }
+                                    },
+                                }
+                            }
+                        },
+                        None => {},
+                    };
+                    //let near = self.edges.get(&key).unwrap();
                 }
                 if key.kind == to.kind {
                     println!("found node {:?}", key);
                     result.push(key.clone());
                 }
             }
+        } else {
+            println!("didn't find root node {:?} {:?}", from, self.nodes.len());
         }
         result
     }

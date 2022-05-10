@@ -25,6 +25,7 @@ pub fn load()  -> Result<Config, Box<dyn std::error::Error>> {
         .get_matches();
 
     let config_file = matches.value_of("file").unwrap_or("config.yaml");
+    println!("{:?}", config_file);
 
     if Path::new(config_file).exists(){
         println!("file: {}", config_file);

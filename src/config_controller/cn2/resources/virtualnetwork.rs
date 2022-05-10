@@ -41,8 +41,19 @@ impl ResourceInterface for VirtualNetworkController{
                         },
                         _ => {}, 
                     }
-                    cache_client.add(ResourceKeyReferences::VirtualNetwork(res.clone(), key.clone(), ref_list));
-                    sender.send(key_action).unwrap();
+                    let cache_add_result = cache_client.add(ResourceKeyReferences::VirtualNetwork(res.clone(), key.clone(), ref_list));
+                    match cache_add_result{
+                        Ok(()) => {
+                            sender.send(key_action).unwrap();
+                        },
+                        Err(e) => {
+                            let key_action = v1::KeyAction{
+                                key: Some(key),
+                                action: i32::from(v1::key_action::Action::Retry),
+                            };
+                            sender.send(key_action).unwrap();
+                        },
+                    };
                 },
                 Err(err) => {
                     if err.code() == tonic::Code::NotFound {

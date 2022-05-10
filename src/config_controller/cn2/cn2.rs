@@ -43,7 +43,7 @@ impl ConfigControllerInterface for CN2ConfigController{
     fn name(&self) -> String{
         "CN2ConfigController".to_string()
     }
-    async fn run(self, cc: Cache) -> Result<(), Box<dyn std::error::Error + Send>> {
+    async fn run(self) -> Result<(), Box<dyn std::error::Error + Send>> {
         println!("running cn2 plugin");
         let server = string_to_static_str(self.config.server.unwrap());
         let channel = Endpoint::from_static(server)

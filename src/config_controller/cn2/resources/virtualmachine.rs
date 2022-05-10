@@ -33,9 +33,21 @@ impl ResourceInterface for VirtualMachineController{
                     };
                     let references: Vec<v1alpha1::ResourceReference> = Vec::new();
 
-                    cache_client.add(ResourceKeyReferences::VirtualMachine(res.clone(), key.clone(), references));
+                    let cache_add_result = cache_client.add(ResourceKeyReferences::VirtualMachine(res.clone(), key.clone(), references));
+                    match cache_add_result{
+                        Ok(()) => {
+                            sender.send(key_action).unwrap();
+                        },
+                        Err(e) => {
+                            let key_action = v1::KeyAction{
+                                key: Some(key),
+                                action: i32::from(v1::key_action::Action::Retry),
+                            };
+                            sender.send(key_action).unwrap();
+                        },
+                    };
                     //cache_client.add(resource.clone());
-                    sender.send(key_action).unwrap();
+                    //sender.send(key_action).unwrap();
                 },
                 Err(err) => {
                     if err.code() == tonic::Code::NotFound {
