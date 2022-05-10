@@ -22,7 +22,7 @@ impl Graph{
     pub fn add_node(&mut self, key: CacheKey, node: CacheKey) -> Option<CacheKey> {
         self.nodes.insert(key, node)
     }
-
+    
     pub fn contains_node(&mut self, key: CacheKey) -> bool {
         self.nodes.contains_key(&key)
     }
